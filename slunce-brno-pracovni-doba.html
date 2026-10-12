@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slunce v Brně a pracovní doba</title>
+<style>
+:root{--bg:#f6f7f9;--card:#ffffff;--text:#16181d;--text2:#4b5160;--muted:#858b98;--grid:#e3e5ea;--border:#d8dbe2;--good:#1baf7a;--you:#e39a00;--dst:#e24b4a;--ring:#ffffff}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--card:#1b1e23;--text:#eceef2;--text2:#b5bac4;--muted:#858b98;--grid:#2a2e35;--border:#343944;--good:#22b884;--you:#e0a21a;--dst:#e66767;--ring:#1b1e23}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:28px 20px 40px}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}
+.sub{color:var(--text2);margin:0 0 20px;font-size:14px}
+.controls{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;margin-bottom:14px;font-size:14px;color:var(--text2)}
+.controls label{display:flex;align-items:center;gap:10px}
+.controls .grow{flex:1;min-width:260px}
+.controls input[type=range]{flex:1;accent-color:var(--good)}
+.val{color:var(--text);font-weight:600;min-width:70px;font-variant-numeric:tabular-nums}
+select{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--text2);margin:0 0 8px}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:11px;height:11px;border-radius:2px;display:inline-block}
+.ln{width:16px;height:0;display:inline-block}
+.chart{position:relative;width:100%}
+.chart canvas{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.card .k{font-size:13px;color:var(--text2)}
+.card .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.card .s{font-size:12px;color:var(--muted)}
+.note{font-size:12px;color:var(--muted);margin-top:18px}
+</style>
+</head>
+<body>
+<main>
+<h1>Slunce v Brně a pracovní doba</h1>
+<p class="sub">Východ a západ slunce pro každý den roku v místním čase, včetně přechodu mezi SEČ a SELČ.</p>
+
+<div class="controls">
+  <label>Rok <select id="yr"></select></label>
+  <span>Konec práce <span id="weo" class="val">14:30</span></span>
+</div>
+<div class="controls">
+  <label class="grow">Začátek práce <input type="range" id="ws" min="5" max="12" step="0.25" value="6"><span id="wso" class="val">6:00</span></label>
+  <label class="grow">Délka práce <input type="range" id="wl" min="4" max="12" step="0.25" value="8.5"><span id="wlo" class="val">8 h 30 min</span></label>
+</div>
+
+<div class="legend">
+  <span><i class="sw" style="background:#FAC775"></i>Slunce nad obzorem</span>
+  <span><i class="sw" style="background:#6b84b8"></i>Občanský soumrak</span>
+  <span><i class="sw" style="background:#1f2a44"></i>Noc</span>
+  <span><i class="sw" style="background:rgba(120,120,120,.6)"></i>Pracovní doba (Po–Pá)</span>
+  <span><i class="ln" style="border-top:2px dashed var(--dst)"></i>Změna času</span>
+</div>
+<div class="chart" id="wrap" style="height:420px"><canvas id="c" role="img" aria-label="Denní světlo v Brně po dnech roku s pásmem pracovní doby"></canvas></div>
+
+<div class="legend" style="margin-top:20px">
+  <span><i class="ln" style="border-top:2px dashed var(--good)"></i>Max. slunce mimo práci (nejlepší začátek daného dne)</span>
+  <span><i class="ln" style="border-top:2px solid var(--you)"></i>Slunce mimo práci při zvoleném začátku</span>
+</div>
+<div class="chart" id="wrap2" style="height:190px"><canvas id="c2" role="img" aria-label="Hodiny slunce mimo pracovní dobu během roku"></canvas></div>
+
+<div class="cards">
+  <div class="card"><div class="k">Průměr slunce mimo práci, zvolený začátek</div><div class="v" id="m1">–</div><div class="s">pracovní dny</div></div>
+  <div class="card"><div class="k">Nejlepší možný průměr</div><div class="v" id="m2">–</div><div class="s">kdyby se začátek měnil den po dni</div></div>
+  <div class="card"><div class="k">Pracovní dny se sluncem před prací</div><div class="v" id="m3">–</div><div class="s" id="m3s">&nbsp;</div></div>
+  <div class="card"><div class="k">Pracovní dny se sluncem po práci</div><div class="v" id="m4">–</div><div class="s" id="m4s">&nbsp;</div></div>
+</div>
+
+<p class="note">Brno, 49,195° s. š., 16,608° v. d. Výpočet pro rovný horizont, přesnost zhruba ±2 min. Pracovní doba je brána jako jeden souvislý blok bez polední pauzy; nejlepší začátek se hledá v rozmezí 5:00–12:00 po čtvrthodinách.</p>
+</main>
+
+<script>
+(function(){
+const LAT=49.195,LNG=16.608,R=Math.PI/180,SMIN=5,SMAX=12;
+const MN=['led','úno','bře','dub','kvě','čvn','čvc','srp','zář','říj','lis','pro'];
+const $=id=>document.getElementById(id);
+const cv=$('c'),wrap=$('wrap'),ctx=cv.getContext('2d');
+const cv2=$('c2'),wrap2=$('wrap2'),ctx2=cv2.getContext('2d');
+const mq=matchMedia('(prefers-color-scheme: dark)');
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function lastSun(y,m){const d=new Date(Date.UTC(y,m+1,0));d.setUTCDate(d.getUTCDate()-d.getUTCDay());return Date.UTC(y,m,d.getUTCDate(),1)}
+function sunJ(ms,h0){
+  const JD=ms/864e5+2440587.5;
+  const Js=Math.round(JD-2451545)+0.0008-LNG/360;
+  const M=((357.5291+0.98560028*Js)%360)*R;
+  const C=1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M);
+  const L=((M/R+C+180+102.9372)%360)*R;
+  const Jt=2451545+Js+0.0053*Math.sin(M)-0.0069*Math.sin(2*L);
+  const sd=Math.sin(L)*Math.sin(23.44*R),cd=Math.cos(Math.asin(sd));
+  const cw=(Math.sin(h0*R)-Math.sin(LAT*R)*sd)/(Math.cos(LAT*R)*cd);
+  const w=Math.acos(Math.max(-1,Math.min(1,cw)))/R;
+  return[(Jt-w/360-2440587.5)*864e5,(Jt+w/360-2440587.5)*864e5];
+}
+
+let days=[],dstS,dstE;
+const LEN=()=>+$('wl').value, WS=()=>+$('ws').value;
+const outside=(d,s,len)=>(d.set-d.rise)-Math.max(0,Math.min(d.set,s+len)-Math.max(d.rise,s));
+
+function build(y){
+  days=[];dstS=lastSun(y,2);dstE=lastSun(y,9);
+  const n=(y%4===0&&(y%100!==0||y%400===0))?366:365;
+  for(let i=0;i<n;i++){
+    const noon=Date.UTC(y,0,1+i,11);
+    const off=(noon>=dstS&&noon<dstE)?2:1;
+    const lh=ms=>{const d=new Date(ms);return d.getUTCHours()+d.getUTCMinutes()/60+d.getUTCSeconds()/3600+off};
+    const [r,s]=sunJ(noon,-0.833),[cr,cs]=sunJ(noon,-6);
+    const dt=new Date(noon);
+    days.push({dt,off,rise:lh(r),set:lh(s),cr:lh(cr),cs:lh(cs),wd:dt.getUTCDay()%6!==0});
+  }
+  optimize();
+}
+function optimize(){
+  const len=LEN();
+  days.forEach(d=>{let best=-1;for(let st=SMIN;st<=SMAX+1e-9;st+=0.25){const v=outside(d,st,len);if(v>best)best=v}d.best=best});
+}
+
+const fmt=h=>{h=(h+24)%24;let m=Math.round(h*60);if(m===1440)m=0;return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')};
+const fmtEnd=h=>h>=24-1e-9?'24:00':fmt(h);
+const dur=h=>{const m=Math.round(h*60);const hh=Math.floor(m/60),mm=m%60;return hh+' h'+(mm?' '+mm+' min':'')};
+
+const pl=46,pr=8,pt=8,pb=26;
+function setup(c,w,x){const dpr=devicePixelRatio||1;const W=w.clientWidth,H=w.clientHeight;c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);return[W,H]}
+
+function monthLabels(c,cw,ph,col){
+  c.font='11px system-ui,sans-serif';c.textAlign='center';c.textBaseline='top';c.fillStyle=col;
+  days.forEach((d,i)=>{if(d.dt.getUTCDate()===1)c.fillText(MN[d.dt.getUTCMonth()],pl+i*cw+cw*15,pt+ph+6)});
+}
+function dstLines(c,cw,ph){
+  c.setLineDash([4,3]);c.strokeStyle=css('--dst');c.lineWidth=1.5;
+  [dstS,dstE].forEach(tm=>{const i=days.findIndex(d=>d.dt.getTime()>=tm);if(i>=0){const x=pl+i*cw;c.beginPath();c.moveTo(x,pt);c.lineTo(x,pt+ph);c.stroke()}});
+  c.setLineDash([]);
+}
+function today(c,cw,ph){
+  const i=days.findIndex(d=>Math.abs(d.dt.getTime()-Date.now())<432e5);if(i<0)return;
+  const x=pl+i*cw;c.strokeStyle=css('--text2');c.lineWidth=1.5;c.beginPath();c.moveTo(x,pt);c.lineTo(x,pt+ph);c.stroke();
+  c.fillStyle=css('--text');c.textAlign='left';c.textBaseline='top';c.font='11px system-ui,sans-serif';c.fillText('dnes',x+4,pt+2);
+}
+
+function draw1(){
+  const [W,H]=setup(cv,wrap,ctx);const s=WS(),len=LEN(),e=Math.min(24,s+len);
+  const pw=W-pl-pr,ph=H-pt-pb,n=days.length,cw=pw/n,Y=h=>pt+Math.min(24,h)/24*ph;
+  days.forEach((d,i)=>{
+    const x=pl+i*cw,w=cw+0.6;
+    ctx.fillStyle='#1f2a44';ctx.fillRect(x,Y(0),w,ph);
+    ctx.fillStyle='#6b84b8';ctx.fillRect(x,Y(d.cr),w,Y(d.cs)-Y(d.cr));
+    ctx.fillStyle='#FAC775';ctx.fillRect(x,Y(d.rise),w,Y(d.set)-Y(d.rise));
+    if(d.wd){ctx.fillStyle='rgba(110,110,110,0.55)';ctx.fillRect(x,Y(s),w,Y(e)-Y(s))}
+  });
+  ctx.strokeStyle=mq.matches?'rgba(255,255,255,.18)':'rgba(255,255,255,.35)';ctx.lineWidth=1;
+  ctx.font='11px system-ui,sans-serif';ctx.fillStyle=css('--muted');ctx.textAlign='right';ctx.textBaseline='middle';
+  for(let h=0;h<=24;h+=2){const y=Y(h);ctx.beginPath();ctx.moveTo(pl,y);ctx.lineTo(W-pr,y);ctx.stroke();ctx.fillText(h+':00',pl-6,y)}
+  ctx.strokeStyle=mq.matches?'rgba(255,255,255,.12)':'rgba(255,255,255,.25)';
+  days.forEach((d,i)=>{if(d.dt.getUTCDate()===1){const x=pl+i*cw;ctx.beginPath();ctx.moveTo(x,pt);ctx.lineTo(x,pt+ph);ctx.stroke()}});
+  monthLabels(ctx,cw,ph,css('--muted'));dstLines(ctx,cw,ph);today(ctx,cw,ph);
+}
+
+function draw2(){
+  const [W,H]=setup(cv2,wrap2,ctx2);const s=WS(),len=LEN();
+  const pw=W-pl-pr,ph=H-pt-pb,n=days.length,cw=pw/n;
+  const MAX=Math.max(3,Math.ceil(Math.max(...days.map(d=>d.best))/3)*3),Y=v=>pt+ph-v/MAX*ph;
+  ctx2.font='11px system-ui,sans-serif';ctx2.textAlign='right';ctx2.textBaseline='middle';ctx2.lineWidth=1;
+  for(let v=0;v<=MAX;v+=3){const y=Y(v);ctx2.strokeStyle=css('--grid');ctx2.beginPath();ctx2.moveTo(pl,y);ctx2.lineTo(W-pr,y);ctx2.stroke();ctx2.fillStyle=css('--muted');ctx2.fillText(v+' h',pl-6,y)}
+  monthLabels(ctx2,cw,ph,css('--muted'));dstLines(ctx2,cw,ph);
+  ctx2.fillStyle=mq.matches?'rgba(34,184,132,.12)':'rgba(27,175,122,.10)';
+  ctx2.beginPath();
+  days.forEach((d,i)=>{const x=pl+i*cw+cw/2;i?ctx2.lineTo(x,Y(d.best)):ctx2.moveTo(x,Y(d.best))});
+  for(let i=n-1;i>=0;i--)ctx2.lineTo(pl+i*cw+cw/2,Y(outside(days[i],s,len)));
+  ctx2.closePath();ctx2.fill();
+  const line=(f,col,dash)=>{ctx2.setLineDash(dash);ctx2.strokeStyle=col;ctx2.lineWidth=2;ctx2.lineJoin='round';ctx2.lineCap='round';ctx2.beginPath();days.forEach((d,i)=>{const x=pl+i*cw+cw/2;i?ctx2.lineTo(x,Y(f(d))):ctx2.moveTo(x,Y(f(d)))});ctx2.stroke();ctx2.setLineDash([])};
+  line(d=>d.best,css('--good'),[5,4]);
+  line(d=>outside(d,s,len),css('--you'),[]);
+  today(ctx2,cw,ph);
+}
+
+function stats(){
+  const s=WS(),len=LEN(),e=s+len;let tot=0,bt=0,c=0,bef=0,aft=0;
+  days.forEach(d=>{if(!d.wd)return;c++;tot+=outside(d,s,len);bt+=d.best;if(d.rise<s)bef++;if(d.set>e)aft++});
+  $('m1').textContent=dur(tot/c);$('m2').textContent=dur(bt/c);
+  $('m3').textContent=bef;$('m4').textContent=aft;
+  $('m3s').textContent='z '+c+' pracovních dnů';$('m4s').textContent='z '+c+' pracovních dnů';
+  $('wso').textContent=fmt(s);$('weo').textContent=fmtEnd(e);$('wlo').textContent=dur(len);
+}
+
+function all(){draw1();draw2();stats()}
+
+const yNow=new Date().getFullYear(),sel=$('yr');
+for(let y=yNow-1;y<=yNow+5;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===yNow)o.selected=true;sel.appendChild(o)}
+sel.addEventListener('change',()=>{build(+sel.value);all()});
+$('ws').addEventListener('input',all);
+$('wl').addEventListener('input',()=>{optimize();all()});
+addEventListener('resize',all);
+mq.addEventListener&&mq.addEventListener('change',all);
+build(yNow);all();
+})();
+</script>
+</body>
+</html>
