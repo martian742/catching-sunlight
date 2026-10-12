@@ -24,6 +24,9 @@ select{font:inherit;color:var(--text);background:var(--card);border:1px solid va
 .ln{width:16px;height:0;display:inline-block}
 .chart{position:relative;width:100%}
 .chart canvas{display:block}
+#wrap{height:clamp(200px,min(48vh,55vw),460px)}
+@supports (height:1svh){#wrap{height:clamp(200px,min(48svh,55vw),460px)}}
+@media (max-width:700px){main{padding:20px 14px 32px}}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:18px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
 .card .k{font-size:13px;color:var(--text2)}
@@ -34,16 +37,15 @@ select{font:inherit;color:var(--text);background:var(--card);border:1px solid va
 </head>
 <body>
 <main>
-<h1>Slunce v Brně a pracovní doba</h1>
-<p class="sub">Východ a západ slunce pro každý den roku v místním čase, včetně přechodu mezi SEČ a SELČ.</p>
+<h1 style="margin-bottom:18px">Slunce v Brně a pracovní doba</h1>
 
 <div class="controls">
   <label>Rok <select id="yr"></select></label>
-  <span>Konec práce <span id="weo" class="val">14:30</span></span>
+  <span>Konec práce <span id="weo" class="val">14:00</span></span>
 </div>
 <div class="controls">
   <label class="grow">Začátek práce <input type="range" id="ws" min="5" max="12" step="0.25" value="6"><span id="wso" class="val">6:00</span></label>
-  <label class="grow">Délka práce <input type="range" id="wl" min="4" max="12" step="0.25" value="8"><span id="wlo" class="val">8 h 30 min</span></label>
+  <label class="grow">Délka práce <input type="range" id="wl" min="4" max="12" step="0.25" value="8"><span id="wlo" class="val">8 h</span></label>
 </div>
 
 <div class="legend">
@@ -53,7 +55,7 @@ select{font:inherit;color:var(--text);background:var(--card);border:1px solid va
   <span><i class="sw" style="background:rgba(120,120,120,.6)"></i>Pracovní doba (Po–Pá)</span>
   <span><i class="ln" style="border-top:2px dashed var(--dst)"></i>Změna času</span>
 </div>
-<div class="chart" id="wrap" style="height:420px"><canvas id="c" role="img" aria-label="Denní světlo v Brně po dnech roku s pásmem pracovní doby"></canvas></div>
+<div class="chart" id="wrap"><canvas id="c" role="img" aria-label="Denní světlo v Brně po dnech roku s pásmem pracovní doby"></canvas></div>
 
 <div class="legend" style="margin-top:20px">
   <span><i class="ln" style="border-top:2px dashed var(--good)"></i>Max. slunce mimo práci (nejlepší začátek daného dne)</span>
